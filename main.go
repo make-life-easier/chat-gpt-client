@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -22,6 +23,7 @@ type Task struct {
 
 type Config struct {
 	APIKey string `json:"api_key"`
+	Port   string `json:"port"`
 }
 
 type ErrorResponse struct {
@@ -294,11 +296,14 @@ func main() {
 		requestQueue <- task
 	}
 
+	http.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		io.WriteString(w, "Hello!")
+	})
 	http.HandleFunc("/addTask", addTaskHandler)
 	http.HandleFunc("/getTask", getTaskHandler)
 
-	fmt.Println("Сервер запущен на :8080")
-	err = http.ListenAndServe(":8080", nil)
+	fmt.Println("Сервер запущен на :" + config.Port)
+	err = http.ListenAndServe(":"+config.Port, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
