@@ -14,7 +14,8 @@ https://documenter.getpostman.com/view/23579261/2s9YC7SrG6
 
 ## Build
 
-GOOS=linux GOARCH=amd64 go build -o ./chatGpt -a
+GOOS=linux GOARCH=amd64 go build -o ./chatgpt_linux -a
+GOOS=darwin GOARCH=amd64 go build -o ./chatgpt_macos -a
 
 ## Запросы
 

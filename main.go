@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 )
 
@@ -140,7 +142,7 @@ func getTaskByItemID(itemID int) (*Task, error) {
 	var task Task
 	err := db.QueryRow("SELECT id, item_id, prompt, response FROM tasks WHERE item_id = ?", itemID).Scan(&task.ID, &task.ItemId, &task.Prompt, &task.Response)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
@@ -214,20 +216,23 @@ func getTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := r.URL.Query().Get("id")
-	if id == "" {
+	idParam := r.URL.Query().Get("id")
+	if idParam == "" {
 		sendJSONError(w, http.StatusBadRequest, "id параметр обязателен")
 		return
 	}
 
-	var task Task
-	err := db.QueryRow("SELECT id, item_id, prompt, response FROM tasks WHERE item_id=?", id).Scan(&task.ID, &task.ItemId, &task.Prompt, &task.Response)
+	id, _ := strconv.Atoi(idParam)
+
+	task, err := getTaskByItemID(id)
+
 	if err != nil {
-		if err == sql.ErrNoRows {
-			sendJSONError(w, http.StatusNotFound, "Task not found")
-		} else {
-			sendJSONError(w, http.StatusInternalServerError, err.Error())
-		}
+		sendJSONError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if task == nil {
+		sendJSONError(w, http.StatusNotFound, "Task not found")
 		return
 	}
 
